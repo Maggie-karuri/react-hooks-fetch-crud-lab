@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-function QuestionForm(props) {
+function QuestionForm({ onCreateQuestion }) {
   const [formData, setFormData] = useState({
     prompt: "",
     answer1: "",
@@ -10,16 +10,43 @@ function QuestionForm(props) {
     correctIndex: 0,
   });
 
-  function handleChange(event) {
-    setFormData({
-      ...formData,
-      [event.target.name]: event.target.value,
-    });
+  function handleChange (event) {
+    const { name, value } = event.target;
+    if (name === "answers") {
+      const updatedAnswers = [...formData.answers];
+      updatedAnswers[parseInt(event.target.dataset.index)] = value;
+      setFormData({ ...formData, answers: updatedAnswers });
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
   }
 
-  function handleSubmit(event) {
+  function handleSubmit (event) {
     event.preventDefault();
-    console.log(formData);
+    fetch("http://localhost:4000/questions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(formData),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Network response was not ok");
+        }
+        return response.json();
+      })
+      .then((data) => {
+        onCreateQuestion(data); // Update QuestionList state with the new question
+        setFormData({
+          prompt: "",
+          answers: ["", "", "", ""],
+          correctIndex: 0,
+        });
+      })
+      .catch((error) => {
+        console.error("Error creating question:", error);
+      });
   }
 
   return (
